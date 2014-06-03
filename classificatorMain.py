@@ -11,17 +11,57 @@ __author__ = 's0540030,s0540040,s0539748'
 
 def main(argv):
     dir = "data"
+    allFiles = 0
     classes = getClasses(dir)
+    learnFilesForClass = dict()
+    learnWords = dict()
 
     for classification in classes:
         learnDirectory = "data/"+str(classification)+"/train"
-        learnFiles = os.listdir(learnDirectory)
+        learnFilesForClass[classification] = os.listdir(learnDirectory)
+        allFiles += len(learnFilesForClass[classification])
 
-        learnWords = dict()
-        learnWords[classification] = getLearnWords(learnFiles, learnDirectory)
+        learnWords[classification] = getLearnWords(learnFilesForClass[classification], learnDirectory)
 
-        for word in learnWords.values():
-           print(word)
+
+    termPrio = dict()
+    for classification in classes:
+        training(termPrio, classification, allFiles, learnWords.get(classification), learnFilesForClass[classification])
+
+        print(termPrio)
+
+
+
+def training(termPrio, classification, allFiles, learnWords, learnFiles):
+    prio = dict()
+    prio[classification] = len(learnFiles)/allFiles
+    tokenCount = countTokensForClass(learnWords, classification)
+
+    #rechne die TermPrio aus also condprob
+    for token in tokenCount:
+        if classification in termPrio:
+            termPrio[token][classification] = tokenCount.get(token).get(classification)/len(learnWords)
+        else:
+            #wenn classe noch nicht drin ist, muss sie erstellt werden
+            classDict = dict()
+            classDict[classification] = tokenCount.get(token).get(classification)/len(learnWords)
+            termPrio[token] = classDict
+
+    return termPrio
+
+
+def countTokensForClass(learnWords, classification):
+    tokenCount = dict()
+
+    for word in learnWords:
+        if classification in tokenCount:
+            tokenCount[word][classification] = learnWords.count(word)
+        else:
+            classDict = dict()
+            classDict[classification] = learnWords.count(word)
+            tokenCount[word] = classDict
+
+    return tokenCount
 
 
 def getClasses(dir):
@@ -32,25 +72,20 @@ def getLearnWords(learnFiles, learnDirectory):
 
     learnWords = list()
     for file in learnFiles:
-        learnWords.append(splitFile(str(learnDirectory)+"/"+str(file)))
+        learnWords.extend(splitFile(str(learnDirectory)+"/"+str(file)))
 
     return learnWords
 
 def splitFile(file):
     #Lese Datei und splitte
-    #TODO: Sport/train/s031.txt hat ein fehlerhaftes Zeichen!!!
-    with open(file, 'r', errors="ignore") as f:
+    with open(file, 'r', errors="ignore", encoding='utf-8') as f:
         words = f.read().split(' ')
 
-    #entferne (. , ")  TODO: Ist das richtig? Steht nirgends
+    #entferne Sonderzeichen
     wordList = list()
     for word in words:
-        wordList.append(word.replace('.', '').replace(',', '').replace("\"", ""))
+        wordList.append(word.replace('.', '').replace(',', '').replace("\"", "").replace("\n", "").replace("(", "").replace(")", ""))
 
     return wordList
-
-#def train():
-
-
 
 if __name__ == "__main__": main(sys.argv)
