@@ -3,6 +3,7 @@ import sys
 from builtins import print
 import os
 import collections
+import math
 
 
 __author__ = 's0540030,s0540040,s0539748'
@@ -27,10 +28,10 @@ def main(argv):
 
         learnWords[classification] = getLearnWords(learnFilesForClass[classification], learnDirectory)
 
-
+    prio = dict()
     termPrio = dict()
     for classification in classes:
-        training(termPrio, classification, allFiles, learnWords.get(classification), learnFilesForClass[classification])
+        training(prio, termPrio, classification, allFiles, learnWords.get(classification), learnFilesForClass[classification])
 
     for item in termPrio.items():
         print(item)
@@ -42,14 +43,14 @@ def main(argv):
         filesDir[classification] = os.listdir("data/"+classification+"/test/")
         classesResult[classification] = dict()
         for file in filesDir[classification]:
-            sum = test(termPrio, "data/"+classification+"/test/"+str(file), classification)
+            sum = test(prio, termPrio, "data/"+classification+"/test/"+str(file), classification)
             classesResult[classification][file] = max(sum, key=sum.get)
     for result in classesResult.items():
         resultOrdered = collections.OrderedDict(sorted(result[1].items()))
         print(resultOrdered)
 
 
-def test(termPrio, testDoc, testGroup):
+def test(prio, termPrio, testDoc, testGroup):
     wordList = list()
     wordList = splitFile(testDoc)
     sum = dict()
@@ -58,14 +59,14 @@ def test(termPrio, testDoc, testGroup):
             groupPrio = termPrio.get(word)
             for group in groupPrio.keys():
                 if group in sum:
-                    sum[group] += groupPrio.get(group)
+                    sum[group] += math.log10(groupPrio.get(group))
                 else:
-                    sum[group] = groupPrio.get(group)
+                    sum[group] = math.log10(prio.get(group))
+                    sum[group] += math.log10(groupPrio.get(group))
     return sum
 
 
-def training(termPrio, classification, allFiles, learnWords, learnFiles):
-    prio = dict()
+def training(prio, termPrio, classification, allFiles, learnWords, learnFiles):
     prio[classification] = len(learnFiles)/allFiles
     tokenCount = countTokensForClass(learnWords, classification)
 
