@@ -1,6 +1,10 @@
+from collections import OrderedDict
 import sys
 from builtins import print
 import os
+import collections
+
+
 __author__ = 's0540030,s0540040,s0539748'
 
 # Wir Klassifizieren Texte, das geht so:
@@ -28,8 +32,36 @@ def main(argv):
     for classification in classes:
         training(termPrio, classification, allFiles, learnWords.get(classification), learnFilesForClass[classification])
 
-        print(termPrio)
+    for item in termPrio.items():
+        print(item)
+    print("-----")
+    #testing
+    classesResult = dict()
+    for classification in classes:
+        filesDir = dict()
+        filesDir[classification] = os.listdir("data/"+classification+"/test/")
+        classesResult[classification] = dict()
+        for file in filesDir[classification]:
+            sum = test(termPrio, "data/"+classification+"/test/"+str(file), classification)
+            classesResult[classification][file] = max(sum, key=sum.get)
+    for result in classesResult.items():
+        resultOrdered = collections.OrderedDict(sorted(result[1].items()))
+        print(resultOrdered)
 
+
+def test(termPrio, testDoc, testGroup):
+    wordList = list()
+    wordList = splitFile(testDoc)
+    sum = dict()
+    for word in wordList:
+        if word in termPrio.keys():
+            groupPrio = termPrio.get(word)
+            for group in groupPrio.keys():
+                if group in sum:
+                    sum[group] += groupPrio.get(group)
+                else:
+                    sum[group] = groupPrio.get(group)
+    return sum
 
 
 def training(termPrio, classification, allFiles, learnWords, learnFiles):
@@ -39,14 +71,13 @@ def training(termPrio, classification, allFiles, learnWords, learnFiles):
 
     #rechne die TermPrio aus also condprob
     for token in tokenCount:
-        if classification in termPrio:
-            termPrio[token][classification] = tokenCount.get(token).get(classification)/len(learnWords)
-        else:
-            #wenn classe noch nicht drin ist, muss sie erstellt werden
+        #wenn classe noch nicht drin ist, muss sie erstellt werden
+        if token not in termPrio:
             classDict = dict()
             classDict[classification] = tokenCount.get(token).get(classification)/len(learnWords)
             termPrio[token] = classDict
-
+        else:
+            termPrio[token][classification] = tokenCount.get(token).get(classification)/len(learnWords)
     return termPrio
 
 
@@ -68,6 +99,7 @@ def getClasses(dir):
     classes = os.listdir(dir)
     return classes
 
+
 def getLearnWords(learnFiles, learnDirectory):
 
     learnWords = list()
@@ -75,6 +107,7 @@ def getLearnWords(learnFiles, learnDirectory):
         learnWords.extend(splitFile(str(learnDirectory)+"/"+str(file)))
 
     return learnWords
+
 
 def splitFile(file):
     #Lese Datei und splitte
