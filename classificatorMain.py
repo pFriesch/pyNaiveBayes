@@ -43,14 +43,14 @@ def main(argv):
         filesDir[classification] = os.listdir("data/"+classification+"/test/")
         classesResult[classification] = dict()
         for file in filesDir[classification]:
-            sum = test(prio, termPrio, "data/"+classification+"/test/"+str(file), classification)
+            sum = test(prio, termPrio, "data/"+classification+"/test/"+str(file))
             classesResult[classification][file] = max(sum, key=sum.get)
     for result in classesResult.items():
         resultOrdered = collections.OrderedDict(sorted(result[1].items()))
         print(resultOrdered)
 
 
-def test(prio, termPrio, testDoc, testGroup):
+def test(prio, termPrio, testDoc):
     wordList = list()
     wordList = splitFile(testDoc)
     sum = dict()
@@ -70,23 +70,29 @@ def training(prio, termPrio, classification, allFiles, learnWords, learnFiles):
     prio[classification] = len(learnFiles)/allFiles
     tokenCount = countTokensForClass(learnWords, classification)
 
+    sum = sumTokenCount(tokenCount,classification)
     #rechne die TermPrio aus also condprob
     for token in tokenCount:
         #wenn classe noch nicht drin ist, muss sie erstellt werden
         if token not in termPrio:
             classDict = dict()
-            classDict[classification] = tokenCount.get(token).get(classification)/len(learnWords)
+            classDict[classification] = tokenCount.get(token).get(classification) + 1 /sum
             termPrio[token] = classDict
         else:
-            termPrio[token][classification] = tokenCount.get(token).get(classification)/len(learnWords)
+            termPrio[token][classification] = tokenCount.get(token).get(classification) + 1/sum
     return termPrio
 
+def sumTokenCount(tokenCount, classification):
+    sum = 0
+    for token in tokenCount.values():
+        sum += token.get(classification) + 1
+    return sum
 
 def countTokensForClass(learnWords, classification):
     tokenCount = dict()
 
     for word in learnWords:
-        if classification in tokenCount:
+        if word in tokenCount and classification in tokenCount[word]:
             tokenCount[word][classification] = learnWords.count(word)
         else:
             classDict = dict()
@@ -118,8 +124,9 @@ def splitFile(file):
     #entferne Sonderzeichen
     wordList = list()
     for word in words:
-        wordList.append(word.replace('.', '').replace(',', '').replace("\"", "").replace("\n", "").replace("(", "").replace(")", ""))
-
+        replacedWord = word.replace('.', '').replace(',', '').replace("\"", "").replace("\n", "").replace("(", "").replace(")", "")
+        if replacedWord != '':
+            wordList.append(replacedWord)
     return wordList
 
 if __name__ == "__main__": main(sys.argv)
